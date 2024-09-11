@@ -3,9 +3,13 @@ package com.buuz135.stoneandsteel.screen;
 import com.buuz135.stoneandsteel.SnSContent;
 import com.buuz135.stoneandsteel.StoneAndSteel;
 import com.buuz135.stoneandsteel.container.DesignerContainer;
+import com.buuz135.stoneandsteel.network.DesignerCraftMessage;
+import com.buuz135.stoneandsteel.recipe.DesignerRecipe;
+import com.buuz135.stoneandsteel.tile.DesignerTile;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -19,18 +23,19 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.StonecutterRecipe;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.awt.*;
 import java.util.List;
 
 public class DesignerScreen extends AbstractContainerScreen<DesignerContainer> {
 
-    private static final ResourceLocation SCROLLER_SPRITE = ResourceLocation.withDefaultNamespace("container/stonecutter/scroller");
-    private static final ResourceLocation SCROLLER_DISABLED_SPRITE = ResourceLocation.withDefaultNamespace("container/stonecutter/scroller_disabled");
-    private static final ResourceLocation RECIPE_SELECTED_SPRITE = ResourceLocation.withDefaultNamespace("container/stonecutter/recipe_selected");
-    private static final ResourceLocation RECIPE_HIGHLIGHTED_SPRITE = ResourceLocation.withDefaultNamespace("container/stonecutter/recipe_highlighted");
-    private static final ResourceLocation RECIPE_SPRITE = ResourceLocation.withDefaultNamespace("container/stonecutter/recipe");
-    private static final ResourceLocation BG_LOCATION = ResourceLocation.withDefaultNamespace("textures/gui/container/stonecutter.png");
+    private static final ResourceLocation SCROLLER_SPRITE = ResourceLocation.fromNamespaceAndPath(StoneAndSteel.MODID,"textures/gui/designer/scroller.png");
+    private static final ResourceLocation SCROLLER_DISABLED_SPRITE = ResourceLocation.fromNamespaceAndPath(StoneAndSteel.MODID,"textures/gui/designer/scroller_disabled.png");
+    private static final ResourceLocation RECIPE_SELECTED_SPRITE = ResourceLocation.fromNamespaceAndPath(StoneAndSteel.MODID,"textures/gui/designer/recipe_selected.png");
+    private static final ResourceLocation RECIPE_HIGHLIGHTED_SPRITE = ResourceLocation.fromNamespaceAndPath(StoneAndSteel.MODID,"textures/gui/designer/recipe_highlighted.png");
+    private static final ResourceLocation RECIPE_SPRITE = ResourceLocation.fromNamespaceAndPath(StoneAndSteel.MODID,"textures/gui/designer/recipe.png");
+
     private static final int SCROLLER_WIDTH = 12;
     private static final int SCROLLER_HEIGHT = 15;
     private static final int RECIPES_COLUMNS = 4;
@@ -59,7 +64,7 @@ public class DesignerScreen extends AbstractContainerScreen<DesignerContainer> {
         guiGraphics.blit(BACKGROUND, i, j, 0, 0, this.imageWidth, this.imageHeight);
         int k = (int)(41.0F * this.scrollOffs);
         ResourceLocation resourcelocation = this.isScrollBarActive() ? SCROLLER_SPRITE : SCROLLER_DISABLED_SPRITE;
-        guiGraphics.blitSprite(resourcelocation, i + 119, j + 15 + k, 12, 15);
+        guiGraphics.blit(resourcelocation, i + 119, j + 15 + k,0,0, 12, 15, 12,15);
         int l = this.leftPos + 52;
         int i1 = this.topPos + 14;
         int j1 = this.startIndex + 12;
@@ -79,27 +84,40 @@ public class DesignerScreen extends AbstractContainerScreen<DesignerContainer> {
             int i = this.leftPos + 52;
             int j = this.topPos + 14;
             int k = this.startIndex + 12;
-            List<RecipeHolder<StonecutterRecipe>> list = this.menu.getRecipes();
+            List<RecipeHolder<DesignerRecipe>> list = this.menu.getRecipes();
 
-            for(int l = this.startIndex; l < k && l < this.menu.getNumRecipes(); ++l) {
-                int i1 = l - this.startIndex;
+            for(int index = this.startIndex; index < k && index < this.menu.getNumRecipes(); ++index) {
+                int i1 = index - this.startIndex;
                 int j1 = i + i1 % 4 * 16;
                 int k1 = j + i1 / 4 * 18 + 2;
                 if (x >= j1 && x < j1 + 16 && y >= k1 && y < k1 + 18) {
-                    var result = ((StonecutterRecipe)((RecipeHolder)list.get(l)).value()).getResultItem(this.minecraft.level.registryAccess());
+                    var recipe = list.get(index);
+                    var result = recipe.value().getOutput();
                     var lines = DesignerScreen.getTooltipFromItem(Minecraft.getInstance(), result);
                     lines.add(Component.literal("Requires: ").withStyle(ChatFormatting.GRAY));
                     lines.add(Component.empty());
                     lines.add(Component.empty());
                     guiGraphics.renderComponentTooltip(this.font, lines ,x, y);
-                    var req = List.of(new ItemStack(Items.GLASS_PANE, 1), new ItemStack(Items.STONE, 6), new ItemStack(Items.IRON_INGOT, 2), new ItemStack(Items.AMETHYST_SHARD, 1));
                     guiGraphics.pose().popPose();
                     guiGraphics.pose().translate(0,0,1000);
-                    for (int i2 = 0; i2 < req.size(); i2++) {
-                        guiGraphics.renderItem(req.get(i2), x + 18 * i2 + 12, y + 10 * (lines.size() - 3)+ 1 );
-                        guiGraphics.renderItemDecorations(Minecraft.getInstance().font, req.get(i2), x + 18 * i2 + 12, y + 10 * (lines.size() - 3)+ 1);
-                        //DesignerScreen.renderSlotHighlight(guiGraphics, x + 18 * i2 + 12, y + 10 * (lines.size() - 3)+ 1, 0, FastColor.ARGB32.color(0x33, Color.RED.getRGB()));
-                        //guiGraphics.renderOutline(x + 18 * i2 + 12, y + 10 * (lines.size() - 3)+ 1, 18, 18, FastColor.ARGB32.opaque(Color.RED.getRGB()));
+                    for (int inputIndex = 0; inputIndex < recipe.value().getInput().size(); inputIndex++) {
+                        var sizedIngredient = recipe.value().getInput().get(inputIndex);
+                        var stack = sizedIngredient.getItems()[(int) ((Minecraft.getInstance().level.getGameTime() / 20) % sizedIngredient.getItems().length)];
+                        var remainingAmount = sizedIngredient.count();
+                        for (int checkingIndex = 0; checkingIndex < this.menu.getTile().getInput().getSlots(); checkingIndex++) {
+                            var tileStack = this.menu.getTile().getInput().getStackInSlot(checkingIndex);
+                            if (sizedIngredient.ingredient().test(tileStack)){
+                                remainingAmount -= tileStack.getCount();
+                            }
+                            if (remainingAmount <= 0){
+                                break;
+                            }
+                        }
+                        if (remainingAmount > 0) {
+                            DesignerScreen.renderSlotHighlight(guiGraphics, x + 18 * inputIndex + 12, y + 10 * (lines.size() - 3)+ 1, 0, FastColor.ARGB32.color(0x33, Color.RED.getRGB()));
+                        }
+                        guiGraphics.renderItem(stack, x + 18 * inputIndex + 12, y + 10 * (lines.size() - 3)+ 1 );
+                        guiGraphics.renderItemDecorations(Minecraft.getInstance().font, stack, x + 18 * inputIndex + 12, y + 10 * (lines.size() - 3)+ 1);
                     }
                     guiGraphics.pose().pushPose();
                 }
@@ -115,7 +133,8 @@ public class DesignerScreen extends AbstractContainerScreen<DesignerContainer> {
             int l = j / 4;
             int i1 = y + l * 18 + 2;
             ResourceLocation resourcelocation;
-            if (i == this.menu.getSelectedRecipeIndex()) {
+            var recipe = this.menu.getRecipes().get(i);
+            if (i == this.menu.getSelectedRecipeIndex() || !DesignerTile.hasAllItems(recipe.value(), this.menu.getTile().getInput())) {
                 resourcelocation = RECIPE_SELECTED_SPRITE;
             } else if (mouseX >= k && mouseY >= i1 && mouseX < k + 16 && mouseY < i1 + 18) {
                 resourcelocation = RECIPE_HIGHLIGHTED_SPRITE;
@@ -123,20 +142,22 @@ public class DesignerScreen extends AbstractContainerScreen<DesignerContainer> {
                 resourcelocation = RECIPE_SPRITE;
             }
 
-            guiGraphics.blitSprite(resourcelocation, k, i1 - 1, 16, 18);
+            guiGraphics.blit(resourcelocation, k, i1 - 1, 0,0,16, 18, 16,18);
         }
 
     }
 
     private void renderRecipes(GuiGraphics guiGraphics, int x, int y, int startIndex) {
-        List<RecipeHolder<StonecutterRecipe>> list = this.menu.getRecipes();
+        List<RecipeHolder<DesignerRecipe>> list = this.menu.getRecipes();
 
         for(int i = this.startIndex; i < startIndex && i < this.menu.getNumRecipes(); ++i) {
             int j = i - this.startIndex;
             int k = x + j % 4 * 16;
             int l = j / 4;
             int i1 = y + l * 18 + 2;
-            guiGraphics.renderItem(((StonecutterRecipe)((RecipeHolder)list.get(i)).value()).getResultItem(this.minecraft.level.registryAccess()), k, i1);
+            var recipe = list.get(i);
+            var result = recipe.value().getOutput();
+            guiGraphics.renderItem(result, k, i1);
         }
 
     }
@@ -148,13 +169,19 @@ public class DesignerScreen extends AbstractContainerScreen<DesignerContainer> {
             int j = this.topPos + 14;
             int k = this.startIndex + 12;
 
-            for(int l = this.startIndex; l < k; ++l) {
-                int i1 = l - this.startIndex;
+            for(int index = this.startIndex; index < k; ++index) {
+                int i1 = index - this.startIndex;
                 double d0 = mouseX - (double)(i + i1 % 4 * 16);
                 double d1 = mouseY - (double)(j + i1 / 4 * 18);
-                if (d0 >= 0.0 && d1 >= 0.0 && d0 < 16.0 && d1 < 18.0 && this.menu.clickMenuButton(this.minecraft.player, l)) {
-                    Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_STONECUTTER_SELECT_RECIPE, 1.0F));
-                    this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, l);
+
+
+                if (d0 >= 0.0 && d1 >= 0.0 && d0 < 16.0 && d1 < 18.0 ) {
+                    var recipe = this.menu.getRecipes().get(index);
+                    if (DesignerTile.hasAllItems(recipe.value(), this.menu.getTile().getInput())){
+                        PacketDistributor.sendToServer(new DesignerCraftMessage(recipe.id(), this.menu.getTile().getBlockPos(), Screen.hasShiftDown() ? 64 : 1));
+                        Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_STONECUTTER_SELECT_RECIPE, 1.0F));
+                        this.minecraft.gameMode.handleInventoryButtonClick(this.menu.containerId, index);
+                    }
                     return true;
                 }
             }
@@ -168,6 +195,7 @@ public class DesignerScreen extends AbstractContainerScreen<DesignerContainer> {
 
         return super.mouseClicked(mouseX, mouseY, button);
     }
+
 
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (this.scrolling && this.isScrollBarActive()) {

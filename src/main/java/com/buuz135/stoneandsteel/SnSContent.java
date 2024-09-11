@@ -2,9 +2,12 @@ package com.buuz135.stoneandsteel;
 
 import com.buuz135.stoneandsteel.block.DesignerBlock;
 import com.buuz135.stoneandsteel.container.DesignerContainer;
+import com.buuz135.stoneandsteel.recipe.CodecRecipeSerializer;
+import com.buuz135.stoneandsteel.recipe.DesignerRecipe;
 import com.buuz135.stoneandsteel.tile.DesignerTile;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -132,6 +135,7 @@ public class SnSContent {
 
         public static final DeferredRegister<RecipeSerializer<?>> REGISTRY = DeferredRegister.create(Registries.RECIPE_SERIALIZER, StoneAndSteel.MODID);
 
+        public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<?>> DESIGNER = recipeSerializer("designer", () -> new CodecRecipeSerializer<>(DesignerRecipe.class, RecipeTypes.DESIGNER, DesignerRecipe.CODEC));
 
     }
 
@@ -139,7 +143,7 @@ public class SnSContent {
 
         public static final DeferredRegister<RecipeType<?>> REGISTRY = DeferredRegister.create(Registries.RECIPE_TYPE, StoneAndSteel.MODID);
 
-
+        public static final DeferredHolder<RecipeType<?>, RecipeType<?>> DESIGNER = recipeType("designer", () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(StoneAndSteel.MODID, "designer")));
 
     }
 

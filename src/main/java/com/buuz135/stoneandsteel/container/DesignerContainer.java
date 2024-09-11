@@ -1,6 +1,7 @@
 package com.buuz135.stoneandsteel.container;
 
 import com.buuz135.stoneandsteel.SnSContent;
+import com.buuz135.stoneandsteel.recipe.DesignerRecipe;
 import com.buuz135.stoneandsteel.tile.DesignerTile;
 import com.google.common.collect.Lists;
 import net.minecraft.network.FriendlyByteBuf;
@@ -24,7 +25,7 @@ public class DesignerContainer extends BasicContainer{
 
     private final DesignerTile tile;
     private final DataSlot selectedRecipeIndex = DataSlot.standalone();
-    private List<RecipeHolder<StonecutterRecipe>> recipes = Lists.newArrayList();
+    private List<RecipeHolder<DesignerRecipe>> recipes = Lists.newArrayList();
 
     public DesignerContainer(int id, Inventory inventory, FriendlyByteBuf buffer) {
         this(id, inventory, (DesignerTile) inventory.player.getCommandSenderWorld().getBlockEntity(buffer.readBlockPos()));
@@ -64,14 +65,14 @@ public class DesignerContainer extends BasicContainer{
     private void setupRecipeList() {
         this.recipes.clear();
         this.selectedRecipeIndex.set(-1);
-        this.recipes = tile.getLevel().getRecipeManager().getAllRecipesFor(RecipeType.STONECUTTING);
+        this.recipes = tile.getLevel().getRecipeManager().getAllRecipesFor((RecipeType<DesignerRecipe>) SnSContent.RecipeTypes.DESIGNER.get());
     }
 
     public int getSelectedRecipeIndex() {
         return this.selectedRecipeIndex.get();
     }
 
-    public List<RecipeHolder<StonecutterRecipe>> getRecipes() {
+    public List<RecipeHolder<DesignerRecipe>> getRecipes() {
         return this.recipes;
     }
 
@@ -79,4 +80,7 @@ public class DesignerContainer extends BasicContainer{
         return this.recipes.size();
     }
 
+    public DesignerTile getTile() {
+        return tile;
+    }
 }

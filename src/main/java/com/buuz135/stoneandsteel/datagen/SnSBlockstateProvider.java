@@ -4,13 +4,10 @@ import com.buuz135.stoneandsteel.StoneAndSteel;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.CropBlock;
-import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.neoforged.neoforge.client.model.generators.BlockStateProvider;
-import net.neoforged.neoforge.client.model.generators.ConfiguredModel;
 import net.neoforged.neoforge.client.model.generators.ModelFile;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
-import net.neoforged.neoforge.registries.DeferredBlock;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 
 public class SnSBlockstateProvider extends BlockStateProvider {
@@ -21,7 +18,7 @@ public class SnSBlockstateProvider extends BlockStateProvider {
 
     @Override
     protected void registerStatesAndModels() {
-        for (DeferredBlock<Block> testBlock : StoneAndSteel.TEST_BLOCKS) {
+        for (DeferredHolder<Block, Block> testBlock : StoneAndSteel.TEST_BLOCKS) {
             simpleBlockUn(testBlock.get());
         }
     }

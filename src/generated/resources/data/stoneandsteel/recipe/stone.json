@@ -1,0 +1,21 @@
+{
+  "type": "stoneandsteel:designer",
+  "input": [
+    {
+      "count": 1,
+      "item": "minecraft:stone"
+    },
+    {
+      "count": 2,
+      "item": "minecraft:coal"
+    },
+    {
+      "count": 2,
+      "tag": "c:crops"
+    }
+  ],
+  "output": {
+    "count": 1,
+    "id": "minecraft:stone"
+  }
+}
